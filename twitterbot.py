@@ -15,6 +15,9 @@ api = tweepy.API(auth)
 
 # ADAFRUIT ------------------------------------------------------------
 # Import library and create instance of REST client.
+# Example of using the MQTT client class to subscribe to a feed and print out
+# any changes made to the feed.  Edit the variables below to configure the key,
+# username, and feed to subscribe to for changes.
 
 # Import standard python modules.
 import sys
@@ -25,12 +28,10 @@ from Adafruit_IO import MQTTClient
 
 # Set to your Adafruit IO key & username below.
 ADAFRUIT_IO_KEY      = '8999ffefe40647799ecb8b762983e797'
-ADAFRUIT_IO_USERNAME = 'alfatiharufa'  # See https://accounts.adafruit.com
-                                                    # to find your username.
+ADAFRUIT_IO_USERNAME = 'alfatiharufa'  # See https://accounts.adafruit.com                                                    # to find your username.
 
 # Set to the ID of the feed to subscribe to for updates.
 FEED_ID = 'phone.translations'
-
 
 # Define callback functions which will be called when certain events happen.
 def connected(client):
@@ -53,26 +54,18 @@ def message(client, feed_id, payload, retain):
     # the new value.
 
     import json
-    # message example: [{"message":"the collaboration","lang":"phone.en-us"}]
-    j = json.loads('{1}'.format(feed_id, payload))
+    # received message example: [{"message":"the collaboration","lang":"phone.en-us"}]
+    j = json.loads('{1}'.encode('ascii', 'ignore').decode('ascii').format(feed_id, payload))
+    #print incoming data
     print "leaking new data:", j[0]["message"]
 
-    # print('Feed {0} received new value: {1}'.format(feed_id, payload))
-    api.update_status(j[0]["message"])
-    # print('{1}'.format(feed_id, payload))
-
-    # twitter --------------------------------------------------
-    # #File the bot will tweet from
-    # filename=open('text.txt','r')
-    # f=filename.readlines()
-    # filename.close()
-    #
-    # #Tweet a line every minute
-    # for line in f:
-    #      api.update_status(line)
-    #      print line
-    #      time.sleep(60) #Sleep for 1 minute
-    #------------------------------------------------------------
+    #check if data is a duplicate - if yes, don't post it; if no, post it;
+    try:
+        api.update_status(j[0]["message"])
+    except tweepy.error.TweepError:
+        pass
+        print("duplicate data, not posted")
+        # print('{1}'.format(feed_id, payload))
 
 # Create an MQTT client instance.
 client = MQTTClient(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
